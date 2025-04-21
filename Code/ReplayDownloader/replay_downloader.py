@@ -170,7 +170,9 @@ for _sub_id, df in target_episodes_df.group_by('SubmissionId'):
         if episode_count > spend_seconds:
             time.sleep(episode_count - spend_seconds)
             
-        if episode_count > EPISODE_LIMIT_SIZE:
+        if episode_count >= EPISODE_LIMIT_SIZE:
             break 
+    if episode_count >= EPISODE_LIMIT_SIZE:
+        break 
         
     print(f'Episodes saved: {episode_count}')
