@@ -29,10 +29,10 @@ namespace LuxRunner
             {
                 string input;
                 string luxLogicStateJsonString;
+                // For debuging purposes, we can load the state from a file
                 if (Debugger.IsAttached)
                 {
-                    (state, luxLogicState) = LoadState(@$"h:\kaggle\LuxAILog\Current\testGame.txt", 1);
-                    //(state, luxLogicState) = LoadState(@$"h:\kaggle\LuxAILog\agentlog.json", 104);
+                    (state, luxLogicState) = LoadState(@$"h:\kaggle\LuxAILog\Current\testGame.json", 1);
 
                 }
                 else
@@ -41,9 +41,9 @@ namespace LuxRunner
                     state = JsonSerializer.Deserialize<LuxState>(input);
                 }
 
+                // Serialize the state to able to save it
                 byte[] serializedLogic = MessagePack.MessagePackSerializer.Serialize(luxLogicState);
                 luxLogicStateJsonString = Convert.ToBase64String(serializedLogic);
-
 
                 byte[] serialized = MessagePack.MessagePackSerializer.Serialize(state);
                 input = Convert.ToBase64String(serialized);
@@ -53,6 +53,8 @@ namespace LuxRunner
                     sb.Append(",");
                 }
                 sb.AppendLine(GetRoundStringForSave(input, luxLogicStateJsonString));
+
+                //This if statement is only for debugging purposes.
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !Debugger.IsAttached)
                 {
                     File.WriteAllText(@$"h:\kaggle\LuxAILog\Current\{state.step}.txt", serializedGameString);
@@ -105,117 +107,41 @@ namespace LuxRunner
                         File.WriteAllText(scoreFileName, scoreSb.ToString());
                     }
                 }
+
+                // We update the state. Move asteroids and nebulaes, update energies, detect score nodes etc.
                 luxLogicState.Update(state);
 
-                if (luxLogicState.PlayerId == 0)
-                {
-                    if (state.obs.team_wins[1] > currentEnemyWin)
-                    {
-                        NNHandler.SwitchNN();
-                        currentEnemyWin = state.obs.team_wins[1];
-                    }
-                }
-                else
-                {
-                    if (state.obs.team_wins[0] > currentEnemyWin)
-                    {
-                        NNHandler.SwitchNN();
-                        currentEnemyWin = state.obs.team_wins[0];
-                    }
-                }
-
-                    Console.Error.WriteLine(serializedGameString); //input json for debugging
-
-
-                //    Dijkstra.ShortestPaths(luxLogicState.Tiles, 0, 100, luxLogicState.StartStep, 1, 0.09, 0.01, 10, 0,
-                //luxLogicState.Env_cfg.unit_move_cost, luxLogicState.NebulaEnergyModified ?? 0);
+                Console.Error.WriteLine(serializedGameString); //input json for debugging
 
                 maxUnits = luxLogicState.Env_cfg.max_units;
-
                 playerId = state.player == "player_0" ? 0 : 1;
                 opponentId = playerId == 1 ? 0 : 1;
 
-                //Console.Error.WriteLine("Step: " + state.step);
 
-                var actionsAr = new int[maxUnits][];
+                var actionsArray = new int[maxUnits][];
 
                 for (int i = 0; i < maxUnits; i++)
                 {
-                    actionsAr[i] = new int[3];
+                    actionsArray[i] = new int[3];
                 }
 
-                if (luxLogicState.StartStep<500 || (luxLogicState.RelicList.Count>0 && luxLogicState.ScoreNodes.Count>0))
+
+                var processLogic = new ProcessLogicNN();
+                var steps = processLogic.Run(luxLogicState, luxLogicState.MyShips, luxLogicState.EnemyShips);
+
+                foreach (var step in steps)
                 {
-                    //var processLogic = new ProcessLogic();
-                    var processLogic = new ProcessLogicNN();
-                    var steps = processLogic.Run(luxLogicState, luxLogicState.MyShips, luxLogicState.EnemyShips);
-
-                    foreach (var step in steps)
-                    {
-                        actionsAr[step.UnitId][0] = (int)step.MoveType;
-                        actionsAr[step.UnitId][1] = step.X;
-                        actionsAr[step.UnitId][2] = step.Y;
-                    }
-                }
-                else
-                {
-                    var processLogic = new ProcessLogic();
-                    //var processLogic = new ProcessLogicNN();
-                    var steps = processLogic.Run(luxLogicState, luxLogicState.MyShips, luxLogicState.EnemyShips);
-
-                    foreach (var step in steps)
-                    {
-                        actionsAr[step.UnitId][0] = (int)step.MoveType;
-                        actionsAr[step.UnitId][1] = step.X;
-                        actionsAr[step.UnitId][2] = step.Y;
-                    }
+                    actionsArray[step.UnitId][0] = (int)step.MoveType;
+                    actionsArray[step.UnitId][1] = step.X;
+                    actionsArray[step.UnitId][2] = step.Y;
                 }
 
-                //var processLogic = new ProcessLogicMixed();
-                //var steps = processLogic.Run(luxLogicState, luxLogicState.MyShips, luxLogicState.EnemyShips);
+                var output = JsonSerializer.Serialize(new LuxActions() { action = actionsArray });
 
-                //foreach (var step in steps)
-                //{
-                //    actionsAr[step.UnitId][0] = (int)step.MoveType;
-                //    actionsAr[step.UnitId][1] = step.X;
-                //    actionsAr[step.UnitId][2] = step.Y;
-                //}
-
-                //foreach (var ship in luxLogicState.MyShips)
-                //{
-                //    var (dist, parent) = Dijkstra.ShortestPaths(luxLogicState.Tiles, ship.Pos, ship.Energy, luxLogicState.StartStep, 1, 0.01, 0.01, luxLogicState.Env_cfg.unit_move_cost, luxLogicState.NebulaEnergyReduction??0);
-                //    actionsAr[ship.ID][0] = r.Next(5); //move direction
-                //    actionsAr[ship.ID][1] = 0;
-                //    actionsAr[ship.ID][2] = 0;
-                //}   
-
-                //var a =MessagePack.MessagePackSerializer.Serialize(luxLogicState);
-                //var b = MessagePack.MessagePackSerializer.Deserialize<LuxLogicState>(a);
-
-                var output = JsonSerializer.Serialize(new LuxActions() { action = actionsAr });
-
-
-                //Console.Error.WriteLine(output); //output json for debugging
                 Console.WriteLine(output);
             }
         }
 
-        private static List<Ship> ExtractVisibleShips(LuxState state, int pid)
-        {
-            List<Ship> ships = new List<Ship>();
-            var mask = state.obs.units_mask[pid];
-            var positions = state.obs.units.position[pid];
-            var energy = state.obs.units.energy[pid];
-            for (int i = 0; i < mask.Length; i++)
-            {
-                if (mask[i]) //unit exists and is visible
-                {
-                    ships.Add(new Ship() { ID = i, Owner = pid, X = positions[i][0], Y = positions[i][1], Energy = energy[i] });
-                }
-            }
-            return ships;
-
-        }
 
 
         static string GetSerializedState(string input, string luxLogicState)

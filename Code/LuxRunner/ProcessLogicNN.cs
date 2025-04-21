@@ -6,6 +6,23 @@ using System.Threading.Tasks;
 
 namespace LuxRunner
 {
+    public enum MoveType
+    {
+        Nothing,
+        Up,
+        Right,
+        Down,
+        Left,
+        Sap
+    }
+    public class Step
+    {
+        public MoveType MoveType { get; set; }
+        public int UnitId { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+    }
+
     public class ProcessLogicNN
     {
         public int[] NextPosTarget { get; set; } = new int[LuxLogicState.Size2];
@@ -40,17 +57,6 @@ namespace LuxRunner
                 }
             }
             var oldScoreNodes = luxLogicState.ScoreNodes;
-            //if (luxLogicState.StartStep % 101 < 50)
-            //{
-            //    luxLogicState.ScoreNodes = enemySccores;
-            //}
-            //if (luxLogicState.ScoreNodes.Count == 0)
-            //{
-            //    foreach (var relic in luxLogicState.RelicList)
-            //    {
-            //        luxLogicState.ScoreNodes.Add(relic);
-            //    }
-            //}
             var nnOutput = NNHandler.GetNNOutput(luxLogicState);
             luxLogicState.ScoreNodes = oldScoreNodes;
             luxLogicState.EnemyShips = origEnemyShips;
@@ -85,7 +91,6 @@ namespace LuxRunner
 
             return Steps;
         }
-
 
         int GetMaxSapPos(LuxLogicState luxLogicState, float[,,] nnOutput, int pos)
         {
@@ -154,31 +159,13 @@ namespace LuxRunner
         {
             var (x, y) = LuxLogicState.GetXY(pos);
             var moveType = MoveType.Nothing;
-            //if (nnOutput[x, y, (int)MoveType.Nothing] < 0.5) nnOutput[x, y, (int)MoveType.Nothing] = 0;
-            //if (nnOutput[x, y, (int)MoveType.Nothing] >= 0.5) nnOutput[x, y, (int)MoveType.Nothing] = 1f;
-            //if (nnOutput[x, y, (int)MoveType.Sap] > 0.5) nnOutput[x, y, (int)MoveType.Sap] = 1f;
             var actualValue = nnOutput[x, y, (int)moveType];
-            //if (luxLogicState.ScoreNodes.Any(s => s == pos) && luxLogicState.StartStep % 101 > 35 && NextPosTarget[pos] == 0 && ProcessLogic.GetSapDistance(MyBasePos, pos) < 8) actualValue *= 1000;
             if (NextPosTarget[pos] > 0) actualValue /= 2;
             for (var i = (int)moveType + 1; i < 6; i++)
             {
                 if (!IsValid(luxLogicState, pos, (MoveType)i)) continue;
                 if (i == 5 && GetMaxSapPos(luxLogicState, nnOutput, pos) == -1) continue;
                 var nextPos = GetPosByMoveType(pos, (MoveType)i);
-                //if (luxLogicState.ScoreNodes.Any(s => s == nextPos) && NextPosTarget[pos] == 0 && luxLogicState.StartStep % 101 > 35)
-                //{
-                //    nnOutput[x, y, i] *= 1000;
-                //}
-                //if (LuxLogicState.MapDistances[pos][EnemyBasePos] > LuxLogicState.MapDistances[nextPos][EnemyBasePos] && (!luxLogicState.ScoreNodes.Any(s => s == pos) || luxLogicState.ScoreNodes.Any(s => s == nextPos) || NextPosTarget[pos] > 0))
-                //{
-                //    nnOutput[x, y, i] *= 5;
-
-                //}
-                //if (!luxLogicState.ScoreNodes.Any(s => s == pos) || luxLogicState.ScoreNodes.Any(s => s == nextPos) || NextPosTarget[pos] > 0)
-                //{
-                //    nnOutput[x, y, i] *= 5;
-
-                //}
                 if (NextPosTarget[nextPos] > 0)
                 {
                     nnOutput[x, y, i] /= 2;

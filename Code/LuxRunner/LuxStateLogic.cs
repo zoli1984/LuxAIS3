@@ -182,9 +182,6 @@ namespace LuxRunner
         [Key(6)]
         public int[] DiscoveredMap { get; set; }
 
-        [Key(7)]
-        public sbyte[] DangerMap { get; set; }
-
         [Key(8)]
         public List<Ship> MyShips { get; set; }
 
@@ -242,53 +239,8 @@ namespace LuxRunner
 
         public LuxLogicState()
         {
-            //Tiles = new Tile[Size * Size * 506];
-            //for (int i = 0; i < Tiles.Length; i++)
-            //{
-            //    var (time, pos) = GetTimeAndPos(i);
-            //    var (x, y) = GetXY(pos);
-            //    Tiles[i] = new Tile() { Pos = pos, X = x, Y = y, Time = time, TimePos = i };
-
-            //    if (time + 1 < 505)
-            //    {
-            //        for (int dx = -1; dx <= 1; dx++)
-            //        {
-            //            for (int dy = -1; dy <= 1; dy++)
-            //            {
-            //                if (dx == 0 && dy == 0) continue;
-            //                var newX = x + dx;
-            //                var newY = y + dy;
-            //                if (newX >= 0 && newX < Size && newY >= 0 && newY < Size)
-            //                {
-            //                    var newPos = GetPos(newX, newY);
-            //                    var newTimePos = GetTimePos(time, newPos);
-            //                    Tiles[i].SapNeighbours.Add(newTimePos);
-            //                    if (Math.Abs(dx) + Math.Abs(dy) != 1) continue;
-            //                    var newNextTimePos = GetTimePos(time + 1, newPos);
-            //                    Tiles[i].Neighbours.Add(newNextTimePos);
-            //                }
-            //            }
-            //        }
-            //        for (int dx = -2; dx <= 2; dx++)
-            //        {
-            //            for (int dy = -2; dy <= 2; dy++)
-            //            {
-            //                if (Math.Abs(dx) != 2 && Math.Abs(dy) != 2) continue;
-            //                var newX = x + dx;
-            //                var newY = y + dy;
-            //                if (newX >= 0 && newX < Size && newY >= 0 && newY < Size)
-            //                {
-            //                    var newPos = GetPos(newX, newY);
-            //                    var newTimePos = GetTimePos(time, newPos);
-            //                    Tiles[i].SapNeighboursNeighbours.Add(newTimePos);
-            //                }
-            //            }
-            //        }
-            //    }
-            //}
             Map = new byte[Size2];
             EnergyMap = new sbyte[Size2];
-            DangerMap = new sbyte[Size2];
             DiscoveredMap = new int[Size2];
             Array.Fill(EnergyMap, (sbyte)127);
         }
@@ -316,138 +268,11 @@ namespace LuxRunner
             }
         }
 
-        void UpdateEnemyPositions()
+        public static int GetSapDistance(int pos1, int pos2)
         {
-            var myBasePos = PlayerId == 0 ? 0 : 575;
-            var enemyBasePos = PlayerId == 0 ? 575 : 0;
-            foreach (var ship in EnemyShips)
-            {
-                if (ship.Energy < 0) continue;
-                var mySeenShips = MyShips.Where(s => s.Energy >= 0 && EnemyShips.Any(es => MapDistances[es.Pos][s.Pos] <= Env_cfg.unit_sensor_range)).ToList();
-                var nextSmallEnergyShips = mySeenShips.Where(s => s.Energy < ship.Energy - Env_cfg.unit_move_cost && MapDistances[ship.Pos][s.Pos] == 1).ToList();
-                if (nextSmallEnergyShips.Count == 1)
-                {
-                    ship.PredictedPos = nextSmallEnergyShips.Single().Pos;
-                    continue;
-                }
-
-                if ((Map[ship.Pos] & MapBit.EnemyStayed) == MapBit.EnemyStayed || ScoreNodes.Any(s=>s==ship.Pos))
-                {
-                    ship.PredictedPos = ship.Pos;
-                    continue;
-                }
-
-                if (ship.Energy < Env_cfg.unit_move_cost)
-                {
-                    ship.PredictedPos = ship.Pos;
-                    continue;
-                }
-
-                if ((Map[ship.Pos] & MapBit.EnemyMoved) != MapBit.EnemyMoved)
-                {
-                    continue;
-                }
-                continue;
-                if (SapDropFactor==0.5) continue;
-
-                if (mySeenShips.Any(ms => MapDistances[ms.Pos][ship.Pos] <= 2)) continue;
-
-                if (ship.Energy >= Env_cfg.unit_sap_cost)
-                {
-                    for (var dx = -Env_cfg.unit_sap_range; dx <= Env_cfg.unit_sap_range; dx++)
-                    {
-                        for (var dy = -Env_cfg.unit_sap_range; dy <= Env_cfg.unit_sap_range; dy++)
-                        {
-                            var nx = ship.X + dx;
-                            var ny = ship.Y + dy;
-                            if (nx < 0 || nx >= Env_cfg.map_width) continue;
-                            if (ny < 0 || ny >= Env_cfg.map_height) continue;
-
-                            var sapPos = LuxLogicState.GetPos(nx, ny);
-
-                            double sapValue = mySeenShips.Count(e => e.Pos == sapPos && e.Energy >= Env_cfg.unit_sap_cost);
-
-                            for (int dx2 = -1; dx2 <= 1; dx2++)
-                            {
-                                for (int dy2 = -1; dy2 <= 1; dy2++)
-                                {
-                                    if (dx2 == 0 && dy2 == 0) continue;
-                                    var nx2 = nx + dx2;
-                                    var ny2 = ny + dy2;
-                                    if (nx2 < 0 || nx2 >= Env_cfg.map_width) continue;
-                                    if (ny2 < 0 || ny2 >= Env_cfg.map_height) continue;
-
-                                    var sapPos2 = LuxLogicState.GetPos(nx2, ny2);
-
-                                    sapValue += mySeenShips.Count(e => e.Pos == sapPos2 && e.Energy >= Env_cfg.unit_sap_cost) * (SapDropFactor ?? 1);
-                                }
-                            }
-
-                            if (sapValue > 1)
-                            {
-                                ship.PredictedSap = Env_cfg.unit_sap_cost;
-                                ship.PredictedPos = ship.Pos;
-                            }
-                        }
-                    }
-                    if (ship.PredictedSap > 0)
-                    {
-                        ship.PredictedSap = 0;
-                        ship.PredictedPos = null;
-                        continue;
-                    }
-                }
-
-                if (ScoreNodes.Any(s => s == ship.Pos))
-                {
-                    ship.PredictedPos = ship.Pos;
-                    continue;
-                }
-
-
-
-
-                //var currentScoreNodes = ScoreNodes.Where(s => MapDistances[s][enemyBasePos] > MapDistances[s][ship.Pos]).ToList();
-                var currentScoreNodes = ScoreNodes.Where(s => MapDistances[myBasePos][s] <= MapDistances[enemyBasePos][s]).OrderBy(s => MapDistances[s][ship.Pos]).Take(Math.Max(ScoreNodes.Count / 4, 1)).ToList();
-                if (ScoreNodes.Any(s => s == ship.Pos)) continue;
-                //    if (ship.Energy<=Env_cfg.unit_sap_cost)
-                {
-                    var (dist, parents, energyMap, routeDistances) = Dijkstra.ShortestPaths(DangerMap, Tiles, ship.Pos, 400, StartStep, 1, 0.09, 0.01, 0, 0, 0,
-                            Env_cfg.unit_move_cost, NebulaEnergyModified ?? 0, MyShips, ScoreNodes);
-
-                    var nextPosList = new List<int>();
-
-                    foreach (var scorePos in currentScoreNodes)
-                    {
-                        if (parents[scorePos] == null) continue;
-                        var nextPos = Dijkstra.GetNextPos(parents, scorePos);
-                        nextPosList.Add(nextPos);
-                    }
-                    nextPosList = nextPosList.Distinct().ToList();
-                    if (nextPosList.Count == 1)
-                    {
-                        ship.PredictedPos = nextPosList.Single();
-                        var (x, y) = GetXY(ship.Pos);
-                    }
-                }
-            }
-        }
-
-        void InitTiles()
-        {
-            foreach (var tile in Tiles)
-            {
-                tile.MyUnitCount = 0;
-                tile.MyUnitNeighbourCount = 0;
-                tile.MyUnitNeighbourNeighbourCount = 0;
-                tile.IsAsteroid = false;
-                tile.IsNebula = false;
-                tile.Energy = 0;
-                tile.IsVisible = false;
-                tile.IsRelic = false;
-                tile.IsScore = false;
-                tile.ScoreCandidate = false;
-            }
+            var (x1, y1) = LuxLogicState.GetXY(pos1);
+            var (x2, y2) = LuxLogicState.GetXY(pos2);
+            return Math.Max(Math.Abs(x1 - x2), Math.Abs(y1 - y2));
         }
 
         public void Update(LuxState state)
@@ -459,7 +284,6 @@ namespace LuxRunner
             }
 
             LuxInput = state;
-            //InitTiles();
             if (state.obs.steps == 0)
             {
                 Env_cfg = state.info.env_cfg;
@@ -472,7 +296,6 @@ namespace LuxRunner
                 for (var i = 0; i < Size2; i++)
                 {
                     DiscoveredMap[i] = 0;
-                   // if (RelicList.Any(r=>ProcessLogic.GetSapDistance(r,i)<=2)) continue;
                     if ((Map[i] & MapBit.NotScoreBit) == MapBit.NotScoreBit)
                     {
                         Map[i] -= MapBit.NotScoreBit;
@@ -510,22 +333,15 @@ namespace LuxRunner
 
             if (StartStep <= 1) return;
             UpdateMap(state, MyShips, LastEnemyShips, EnemyShips);
-            //UpdateTiles(state);
+
             DetectSapDropFactor(EnemyShips, LastEnemyShips, lastMyShips);
             LastEnemyShips = ExtractVisibleShips(state, EnemyId);
-            //if (SapDropFactor != 1)
-            //{
-            //    UpdateEnemyPositions();
-            //}
+
             UpdateDanger();
         }
 
         void UpdateDanger()
         {
-            for (int i = 0; i < Size2; i++)
-            {
-                DangerMap[i] = (sbyte)Math.Max(0, DangerMap[i] - 1);
-            }
             foreach (var ship in EnemyShips)
             {
                 for (int dx = -Env_cfg.unit_sap_range-1; dx<= Env_cfg.unit_sap_range+1; dx++)
@@ -536,8 +352,7 @@ namespace LuxRunner
                         var newY = ship.Y + dy;
                         if (newX >= 0 && newX < Size && newY >= 0 && newY < Size)
                         {
-                            var newPos = GetPos(newX, newY);
-                            DangerMap[newPos] = 10;                            
+                            var newPos = GetPos(newX, newY);                         
                         }
                     }
                 }
@@ -985,7 +800,7 @@ namespace LuxRunner
             var knownEnemyShipsOnScores = currentEnemyShips.Count(s => ScoreNodes.Contains(s.Pos));
             enemyScoreDif -= knownEnemyShipsOnScores;
             var enemyScores = ScoreNodes.Where(s => (Map[s] & MapBit.Visible) == 0)
-                                .OrderBy(s=> ProcessLogic.GetSapDistance(enemyBasePos,s)).ToList();
+                                .OrderBy(s=> GetSapDistance(enemyBasePos,s)).ToList();
 
             PredictedEnemyPos = enemyScores.Take(enemyScoreDif).ToList();
 
@@ -1286,7 +1101,7 @@ namespace LuxRunner
                     }
                     else
                     {
-                        if (MyShips.Any(s => ProcessLogic.GetSapDistance(s.Pos, pos) <= Env_cfg.unit_sensor_range))
+                        if (MyShips.Any(s => GetSapDistance(s.Pos, pos) <= Env_cfg.unit_sensor_range))
                         {
                            // mapValue |= MapBit.NebulaBit;
                             mapValue |= MapBit.PseudoNebulaBit;
