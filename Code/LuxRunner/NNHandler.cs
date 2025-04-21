@@ -12,8 +12,8 @@ namespace LuxRunner
 {
     public static class NNHandler
     {
-        static InferenceSession session1 = new InferenceSession("model5x1_test.onnx");
-        static InferenceSession session2 = new InferenceSession("model5x1_test2.onnx");
+        static InferenceSession session1 = new InferenceSession(Configuration.Model1Path);
+        static InferenceSession session2 = new InferenceSession(Configuration.Model2Path);
 
         static int inputDim = 33;
 

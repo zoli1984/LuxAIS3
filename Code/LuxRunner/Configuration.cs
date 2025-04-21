@@ -15,6 +15,8 @@ namespace LuxRunner
         public static double SapDrop025Threshold { get; }
         public static double SapDrop10Threshold { get; }
         public static double SapDropUnknown { get; }
+        public static string Model1Path { get; }
+        public static string Model2Path { get; }
         static Configuration()
         {
             _config = new ConfigurationBuilder()
@@ -26,7 +28,8 @@ namespace LuxRunner
             SapDrop025Threshold = double.Parse(_config["AppSettings:SapDrop025Threshols"], CultureInfo.InvariantCulture);
             SapDrop10Threshold = double.Parse(_config["AppSettings:SapDrop10Threshols"], CultureInfo.InvariantCulture);
             SapDropUnknown = double.Parse(_config["AppSettings:SapDropUnknown"], CultureInfo.InvariantCulture);
-
+            Model1Path = _config["AppSettings:Model1Path"].ToString();
+            Model2Path = _config["AppSettings:Model2Path"].ToString();
         }
     }
 }
