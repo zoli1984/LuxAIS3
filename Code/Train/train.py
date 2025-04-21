@@ -240,15 +240,13 @@ if __name__ == '__main__':
     parser.add_argument(
         "--settings_path",
         type=Path,
-        # required=True,
-        default=Path(rf"h:\kaggle\LuxAIS3\settings.json"),
+        required=True,
         help="Path to JSON settings file"
     )
 
     parser.add_argument(
         "--player_node",
         type=str,
-        # required=True,
         default="frog_parade",
         help="Name of the player node in settings file (e.g. 'frog_parade')"
     )
@@ -256,7 +254,6 @@ if __name__ == '__main__':
     parser.add_argument(
         "--pretrained_model_path",
         type=str,
-        # required=True,
         default="",
         help="Pretrained model name. It is the trained FrogParade model when we finetune with FlatNeurons"
     )
@@ -264,15 +261,13 @@ if __name__ == '__main__':
     parser.add_argument(
         "--checkpoint_dir",
         type=str,
-        # required=True,
-        default=rf"h:\kaggle\LuxAIS3\ModelCheckpoints",
+        required=True,
         help="checkpoints will be saved here"
     )
 
     parser.add_argument(
         "--is_larger_model",
         type=bool,
-        required=True,
         default=False,
         help="Use more features in U-net"
     )
@@ -280,7 +275,6 @@ if __name__ == '__main__':
     parser.add_argument(
         "--epochs",
         type=int,
-        # required=True,
         default=10,
         help="Use more features in U-net"
     )
@@ -370,5 +364,7 @@ if __name__ == '__main__':
         if avg_val_loss < best_loss:
             best_loss = avg_val_loss
         torch.save(model.state_dict(), rf'{args.checkpoint_dir}/{epoch}_{avg_train_loss}_{avg_val_loss}.pth')
+        mock_input=torch.rand(1,24,24,33).to(device)
+        torch.onnx.export(model, mock_input, rf'{args.checkpoint_dir}/{epoch}_{avg_train_loss}_{avg_val_loss}.onnx', input_names=["input"], output_names=["output"])
         print("Saved model!")
 
