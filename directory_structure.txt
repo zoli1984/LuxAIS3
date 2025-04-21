@@ -1,0 +1,4 @@
+.
+./LuxAIS3
+./LuxAIS3/Code
+./LuxAIS3/Documentation
