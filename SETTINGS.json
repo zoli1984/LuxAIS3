@@ -11,5 +11,6 @@
 		"replays_path": "h:\\kaggle\\LuxAIS3\\Replays\\FlatNeurons",
 		"dataset_path": "h:\\kaggle\\LuxAIS3\\Datasets\\FlatNeurons",
 		"train_ratio": 1
-	}
+	},
+	"model_checkpoint_dir": "h:\\kaggle\\LuxAIS3\\ModelCheckpoints"
 }
