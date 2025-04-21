@@ -37,35 +37,35 @@ namespace LuxRunner
         [Key(5)]
         public int TimePos { get; set; }
 
-        [Key(6)] 
+        [Key(6)]
         public int Time { get; set; }
 
-        [Key(7)] 
+        [Key(7)]
         public bool IsNebula { get; set; }
 
-        [Key(8)] 
+        [Key(8)]
         public bool IsAsteroid { get; set; }
-        [Key(9)] 
+        [Key(9)]
         public bool IsRelic { get; set; }
-        [Key(10)] 
+        [Key(10)]
         public bool IsVisible { get; set; }
-        [Key(11)] 
+        [Key(11)]
         public bool IsScore { get; set; }
-        [Key(12)] 
+        [Key(12)]
         public bool ScoreCandidate { get; set; }
-        [Key(13)] 
+        [Key(13)]
         public int MyUnitCount { get; set; }
-        [Key(14)] 
+        [Key(14)]
         public int MyUnitNeighbourCount { get; set; }
-        [Key(15)] 
+        [Key(15)]
         public int MyUnitNeighbourNeighbourCount { get; set; }
 
 
-        [Key(16)] 
+        [Key(16)]
         public List<int> Neighbours { get; set; }
-        [Key(17)] 
+        [Key(17)]
         public List<int> SapNeighbours { get; set; }
-        [Key(18)] 
+        [Key(18)]
         public List<int> SapNeighboursNeighbours { get; set; }
 
         public Tile()
@@ -100,7 +100,7 @@ namespace LuxRunner
         public bool IsMoved { get; set; }
 
         [IgnoreMember]
-        public (double[], int?[], int[] energyMap, int?[] routeDistances)  DijsktraResult { get; set; }
+        public (double[], int?[], int[] energyMap, int?[] routeDistances) DijsktraResult { get; set; }
 
         [IgnoreMember]
         public bool HasDijsktraResult { get; set; }
@@ -278,7 +278,7 @@ namespace LuxRunner
         public void Update(LuxState state)
         {
             PreviousEnemyShips = EnemyShips;
-            for(var i = 0; i<Size2; i++)
+            for (var i = 0; i < Size2; i++)
             {
                 DiscoveredMap[i] = (int)Math.Max(0, DiscoveredMap[i] - 1);
             }
@@ -289,7 +289,7 @@ namespace LuxRunner
                 Env_cfg = state.info.env_cfg;
             }
             StartStep = state.obs.steps;
-            if (StartStep%101 == 0 && StartStep<300)
+            if (StartStep % 101 == 0 && StartStep < 300)
             {
                 NewRelicList.Clear();
                 IsRelicFound = false;
@@ -316,7 +316,7 @@ namespace LuxRunner
                     var (x, y) = GetXY(ship.Pos);
                     if (((Map[ship.Pos] & MapBit.NebulaBit) == MapBit.NebulaBit || (Map[ship.Pos] & MapBit.PseudoNebulaBit) == MapBit.PseudoNebulaBit) && state.obs.map_features.tile_type[x][y] == TileType.Nebula)
                     {
-                        var oldShip = MyShips.SingleOrDefault(s => s.ID == ship.ID && Math.Abs(s.X-ship.X)+ Math.Abs(s.Y - ship.Y)<=1);
+                        var oldShip = MyShips.SingleOrDefault(s => s.ID == ship.ID && Math.Abs(s.X - ship.X) + Math.Abs(s.Y - ship.Y) <= 1);
                         if (oldShip != null)
                         {
                             var energyDif = ship.Energy - oldShip.Energy + Env_cfg.unit_move_cost - EnergyMap[ship.Pos];
@@ -336,28 +336,8 @@ namespace LuxRunner
 
             DetectSapDropFactor(EnemyShips, LastEnemyShips, lastMyShips);
             LastEnemyShips = ExtractVisibleShips(state, EnemyId);
-
-            UpdateDanger();
         }
 
-        void UpdateDanger()
-        {
-            foreach (var ship in EnemyShips)
-            {
-                for (int dx = -Env_cfg.unit_sap_range-1; dx<= Env_cfg.unit_sap_range+1; dx++)
-                {
-                    for (int dy = -Env_cfg.unit_sap_range-1; dy <= Env_cfg.unit_sap_range+1; dy++)
-                    {
-                        var newX = ship.X + dx;
-                        var newY = ship.Y + dy;
-                        if (newX >= 0 && newX < Size && newY >= 0 && newY < Size)
-                        {
-                            var newPos = GetPos(newX, newY);                         
-                        }
-                    }
-                }
-            }
-        }
 
         void DetectSapDropFactor(List<Ship> currentEnemyShips, List<Ship> lastEnemyShips, List<Ship> lastMyShips)
         {
@@ -368,19 +348,13 @@ namespace LuxRunner
                 var lastTurnShip = lastEnemyShips.SingleOrDefault(ls => ls.ID == ship.ID);
                 if (lastTurnShip == null) continue;
 
-                //var currentEnergyWithoutSap = EnergyMap[ship.Pos] + lastTurnShip.Energy;
                 var currentEnergyWithoutSap = lastTurnShip.Energy;
                 if (lastTurnShip.Pos != ship.Pos)
                     currentEnergyWithoutSap -= Env_cfg.unit_move_cost;
-                //if ((Map[ship.Pos] & MapBit.NebulaBit) == MapBit.NebulaBit)
-                //{
-                //    currentEnergyWithoutSap += NebulaEnergyModified.Value;
-                //}
 
                 currentEnergyWithoutSap -= LastSapPositions.Count(s => s == ship.Pos) * Env_cfg.unit_sap_cost;
 
                 var numberOfNearSap = LastSapPositions.Count(s => s != ship.Pos && IsIn8x8(s, ship.Pos));
-                //if (numberOfNearSap == 0) continue;
 
                 var nearMyShips = MyShips.Where(s => IsIn8x4(s.Pos, ship.Pos)).ToList();
                 var nearMyShipsEnergy = lastMyShips.Where(n => n.Energy > 0 && nearMyShips.Any(nm => nm.ID == n.ID)).Select(s => s.Energy).ToList();
@@ -402,84 +376,67 @@ namespace LuxRunner
                     foreach (var sapTrial in sapTrials)
                     {
                         var sapValue = sapTrial * Env_cfg.unit_sap_cost;
-                        var auraValue = nearMyShipsEnergy.Sum(s=>(int)(s*auraTrial/ auraDivider));
+                        var auraValue = nearMyShipsEnergy.Sum(s => (int)(s * auraTrial / auraDivider));
 
-                        //var currentEnergyWithoutSapList = new List<int> { currentEnergyWithoutSap, currentEnergyWithoutSap + EnergyMap[ship.Pos] };
                         var currentEnergyWithoutSapTrial = currentEnergyWithoutSap;
                         if (currentEnergyWithoutSapTrial >= 0)
                         {
                             currentEnergyWithoutSapTrial += EnergyMap[ship.Pos];
                         }
-                        //foreach (var currentEnergyWithoutSapTrial in currentEnergyWithoutSapList)
-                        {
-                            if (Math.Abs(currentEnergyWithoutSapTrial - (int)(sapValue * numberOfNearSap) - auraValue - ship.Energy)<=1)
-                            {
-                                if (numberOfNearSap > 0)
-                                {
-                                    if (SapDropFactor.HasValue && SapDropFactor != sapTrial)
-                                    {
-                                        SapDropFactor = null;
-                                    }
-                                    else
-                                    {
-                                        SapDropFactor = sapTrial;
-                                    }
-                                }
-                                if (nearMyShips.Count > 0 && auraValue>3)
-                                {
-                                    if (EnergyVoidFactor.HasValue && EnergyVoidFactor != auraTrial)
-                                    {
-                                        EnergyVoidFactor = null;
-                                    }
-                                    else
-                                    {
-                                        EnergyVoidFactor = auraTrial;
-                                    }
-                                }
-                              //  break;
-                            }
 
-                            if (ship.Pos == lastTurnShip.Pos && Math.Abs(currentEnergyWithoutSapTrial - Env_cfg.unit_sap_cost - sapValue * numberOfNearSap - auraValue - ship.Energy)<=1)
+                        if (Math.Abs(currentEnergyWithoutSapTrial - (int)(sapValue * numberOfNearSap) - auraValue - ship.Energy) <= 1)
+                        {
+                            if (numberOfNearSap > 0)
                             {
-                                if (numberOfNearSap > 0)
+                                if (SapDropFactor.HasValue && SapDropFactor != sapTrial)
                                 {
-                                    if (SapDropFactor.HasValue && SapDropFactor != sapTrial)
-                                    {
-                                        SapDropFactor = null;
-                                    }
-                                    else
-                                    {
-                                        SapDropFactor = sapTrial;
-                                    }
+                                    SapDropFactor = null;
                                 }
-                                if (nearMyShips.Count > 0 && auraValue > 3)
+                                else
                                 {
-                                    if (EnergyVoidFactor.HasValue && EnergyVoidFactor != auraTrial)
-                                    {
-                                        EnergyVoidFactor = null;
-                                    }
-                                    else
-                                    {
-                                        EnergyVoidFactor = auraTrial;
-                                    }
+                                    SapDropFactor = sapTrial;
                                 }
-                          //      break;
+                            }
+                            if (nearMyShips.Count > 0 && auraValue > 3)
+                            {
+                                if (EnergyVoidFactor.HasValue && EnergyVoidFactor != auraTrial)
+                                {
+                                    EnergyVoidFactor = null;
+                                }
+                                else
+                                {
+                                    EnergyVoidFactor = auraTrial;
+                                }
                             }
                         }
-                        //if (SapDropFactor.HasValue)
-                        //{
-                        //    break;
-                        //}
+
+                        if (ship.Pos == lastTurnShip.Pos && Math.Abs(currentEnergyWithoutSapTrial - Env_cfg.unit_sap_cost - sapValue * numberOfNearSap - auraValue - ship.Energy) <= 1)
+                        {
+                            if (numberOfNearSap > 0)
+                            {
+                                if (SapDropFactor.HasValue && SapDropFactor != sapTrial)
+                                {
+                                    SapDropFactor = null;
+                                }
+                                else
+                                {
+                                    SapDropFactor = sapTrial;
+                                }
+                            }
+                            if (nearMyShips.Count > 0 && auraValue > 3)
+                            {
+                                if (EnergyVoidFactor.HasValue && EnergyVoidFactor != auraTrial)
+                                {
+                                    EnergyVoidFactor = null;
+                                }
+                                else
+                                {
+                                    EnergyVoidFactor = auraTrial;
+                                }
+                            }
+                        }
                     }
-                    //if (SapDropFactor.HasValue)
-                    //{
-                    //    break;
-                    //}
                 }
-                //if (SapDropFactor.HasValue)
-                //{
-                //    break;
-                //}
             }
         }
 
@@ -493,70 +450,12 @@ namespace LuxRunner
         {
             var (x, y) = GetXY(pos);
             var (x2, y2) = GetXY(pos2);
-            return Math.Abs(x - x2)+Math.Abs(y - y2) == 1;
-        }
-
-        public Tile GetTile(int time, int x, int y)
-        {
-            return Tiles[GetTimePos(time, GetPos(x, y))];
-        }
-
-        void UpdateTiles(LuxState state)
-        {
-            for (int pos = 0; pos < Size2; pos++)
-            {
-                if ((Map[pos] & MapBit.AsteroidBit) == MapBit.AsteroidBit)
-                {
-                    FillAsteroid(pos);
-                    var symetricPos = GetSymetricPos(pos);
-                    if (symetricPos != pos)
-                    {
-                        FillAsteroid(symetricPos);
-                    }
-                }
-                if ((Map[pos] & MapBit.NebulaBit) == MapBit.NebulaBit || (Map[pos] & MapBit.PseudoNebulaBit) == MapBit.PseudoNebulaBit)
-                {
-                    FillNebula(pos);
-                    var symetricPos = GetSymetricPos(pos);
-                    if (symetricPos != pos)
-                    {
-                        FillNebula(symetricPos);
-                    }
-                }
-                var energyValue = EnergyMap[pos] == 127 ? Env_cfg.unit_move_cost : EnergyMap[pos];
-                FillEnergy(pos, energyValue);
-                FillEnergy(GetSymetricPos(pos), energyValue);
-                FillVisible(pos, EnergyMap[pos] != 127);
-                FillVisible(GetSymetricPos(pos), EnergyMap[pos] != 127);
-            }
-
-            if (MyShips.Count > 0)
-            {
-                for (var x = 0; x < Size; x++)
-                {
-                    for (var y = 0; y < Size; y++)
-                    {
-                        var pos = GetPos(x, y);
-                        var closestMyShipDistX = MyShips.Min(s => Math.Abs(s.X-x));
-                        var closestMyShipDistY = MyShips.Min(s => Math.Abs(s.Y-y));
-                        if (state.obs.map_features.tile_type[x][y] == TileType.Unknown && Math.Abs(closestMyShipDistX-x) <= Env_cfg.unit_sensor_range && Math.Abs(closestMyShipDistY - y) <= Env_cfg.unit_sensor_range)
-                        {
-                            var timePos = GetTimePos(state.obs.steps+1, pos);
-                            Tiles[timePos].IsNebula = true;
-                        }
-                    }
-                }
-            }
-
+            return Math.Abs(x - x2) + Math.Abs(y - y2) == 1;
         }
 
         public void UpdateMap(LuxState state, List<Ship> myShips, List<Ship> lastEnemyShips, List<Ship> currentEnemyShips)
         {
             var (newMap, relicList) = CreateMap(state, lastEnemyShips, currentEnemyShips);
-
-
-            //RelicList.AddRange(newRelics);
-            //RelicList = RelicList.Distinct().ToList();
 
             bool astreoidMoveDetected = false;
             if (!ObjectRoundPerMove.HasValue)
@@ -572,7 +471,7 @@ namespace LuxRunner
                         ObjectDirection = -1;
                         if (state.obs.steps > 1)
                         {
-                            ObjectRoundPerMove =  1.0 / (state.obs.steps - 1);
+                            ObjectRoundPerMove = 1.0 / (state.obs.steps - 1);
                             if (state.step == 7)
                             {
                                 ObjectRoundPerMove = 0.15;
@@ -594,11 +493,10 @@ namespace LuxRunner
 
                     }
                 }
-
             }
             else
             {
-                astreoidMoveDetected = ((state.obs.steps - 1) % (int)Math.Floor(1.0/ObjectRoundPerMove.Value)) == 0;
+                astreoidMoveDetected = ((state.obs.steps - 1) % (int)Math.Floor(1.0 / ObjectRoundPerMove.Value)) == 0;
             }
             if (astreoidMoveDetected)
             {
@@ -688,10 +586,6 @@ namespace LuxRunner
                                 {
                                     Map[newPos] = (byte)(Map[newPos] - MapBit.NotScoreBit);
                                 }
-                                //if ((Map[newPos] & MapBit.DiscoveredBit) == MapBit.DiscoveredBit)
-                                //{
-                                //    Map[newPos] = (byte)(Map[newPos] - MapBit.DiscoveredBit);
-                                //}
                             }
                         }
                     }
@@ -800,22 +694,11 @@ namespace LuxRunner
             var knownEnemyShipsOnScores = currentEnemyShips.Count(s => ScoreNodes.Contains(s.Pos));
             enemyScoreDif -= knownEnemyShipsOnScores;
             var enemyScores = ScoreNodes.Where(s => (Map[s] & MapBit.Visible) == 0)
-                                .OrderBy(s=> GetSapDistance(enemyBasePos,s)).ToList();
+                                .OrderBy(s => GetSapDistance(enemyBasePos, s)).ToList();
 
             PredictedEnemyPos = enemyScores.Take(enemyScoreDif).ToList();
-
-            //var mergedCandidates = CandidateGroupList.Union(newCandidateList).Distinct().ToList();
-            //CandidateGroupList.Clear();
-            //foreach (var candidate in mergedCandidates)
-            //{
-            //    if ((Map[candidate] & MapBit.NotScoreBit) != MapBit.NotScoreBit)
-            //    {
-            //        CandidateGroupList.Add(candidate);
-            //    }
-            //}
         }
 
-        
 
         void ProcessCandidates()
         {
@@ -1004,28 +887,14 @@ namespace LuxRunner
             var mergedMap = new byte[Size2];
             for (int p = 0; p < Size2; p++)
             {
-          //      if ((DiscoveredMap[p] & MapBit.DiscoveredBit) == MapBit.DiscoveredBit)
-                {
-                    mergedMap[p] = newMap[p];
-                }
-            //    if ((oldMap[p] & MapBit.DiscoveredBit) == MapBit.DiscoveredBit)
-                {
-                    mergedMap[p] = (byte)(mergedMap[p] |
-                                   //(oldMap[p] & MapBit.DiscoveredBit) |
-                                   (oldMap[p] & MapBit.AsteroidBit) |
-                                   (oldMap[p] & MapBit.NebulaBit) |
-                                   (oldMap[p] & MapBit.NotScoreBit) |
-                                   (oldMap[p] & MapBit.EnemyMoved) |
-                                   (oldMap[p] & MapBit.PseudoNebulaBit) |
-                                   (oldMap[p] & MapBit.EnemyStayed));
-                    //if ((oldMap[p] & MapBit.EnemyMoved) == MapBit.EnemyMoved && (newMap[p] & MapBit.EnemyStayed) == MapBit.EnemyStayed)
-                    //{
-                    //    mergedMap[p] -= MapBit.EnemyStayed;
-                    //}
-
-
-
-                }
+                mergedMap[p] = newMap[p];
+                mergedMap[p] = (byte)(mergedMap[p] |
+                               (oldMap[p] & MapBit.AsteroidBit) |
+                               (oldMap[p] & MapBit.NebulaBit) |
+                               (oldMap[p] & MapBit.NotScoreBit) |
+                               (oldMap[p] & MapBit.EnemyMoved) |
+                               (oldMap[p] & MapBit.PseudoNebulaBit) |
+                               (oldMap[p] & MapBit.EnemyStayed));
             }
             return mergedMap;
         }
@@ -1047,10 +916,6 @@ namespace LuxRunner
                 {
                     mergedEnergyMap[p] = 127;
                 }
-                //if (oldEnergyMap[p] != 127 && newEnergyMap[p] != 127 && oldEnergyMap[p] != newEnergyMap[p])
-                //{
-                //    throw new Exception("Energy map is not consistent");
-                //}
             }
             return mergedEnergyMap;
 
@@ -1095,7 +960,6 @@ namespace LuxRunner
                         {
                             DiscoveredMap[pos] = 400;
                         }
-                        //mapValue |= MapBit.DiscoveredBit;
 
                         mapValue |= MapBit.Visible;
                     }
@@ -1103,7 +967,6 @@ namespace LuxRunner
                     {
                         if (MyShips.Any(s => GetSapDistance(s.Pos, pos) <= Env_cfg.unit_sensor_range))
                         {
-                           // mapValue |= MapBit.NebulaBit;
                             mapValue |= MapBit.PseudoNebulaBit;
                         }
                     }
@@ -1112,7 +975,7 @@ namespace LuxRunner
             }
             for (int p = 0; p < Size2; p++)
             {
-                var (x,y) = GetXY(p);
+                var (x, y) = GetXY(p);
                 if (state.obs.map_features.tile_type[x][y] != TileType.Unknown)
                 {
                     var symetricPos = GetSymetricPos(p);
@@ -1122,7 +985,7 @@ namespace LuxRunner
                     {
                         if ((newMap[symetricPos] & MapBit.Visible) == MapBit.Visible)
                         {
-                            newMap[symetricPos] -=  MapBit.Visible;                            
+                            newMap[symetricPos] -= MapBit.Visible;
                         }
                     }
                 }
@@ -1228,13 +1091,12 @@ namespace LuxRunner
             var energy = state.obs.units.energy[pid];
             for (int i = 0; i < mask.Length; i++)
             {
-                if (mask[i]) //unit exists and is visible
+                if (mask[i])
                 {
                     ships.Add(new Ship() { ID = i, Owner = pid, X = positions[i][0], Y = positions[i][1], Energy = energy[i], Pos = GetPos(positions[i][0], positions[i][1]) });
                 }
             }
             return ships;
-
         }
 
         public static int GetTimePos(int time, int pos)
@@ -1261,73 +1123,6 @@ namespace LuxRunner
         {
             var (x, y) = GetXY(pos);
             return GetPos(Size - 1 - y, Size - 1 - x);
-        }
-
-        void FillAsteroid(int pos)
-        {
-            Tiles[GetTimePos(StartStep, pos)].IsAsteroid = true;
-            if (StartStep < 1)
-                return;
-
-            for (int i = StartStep + 1; i <= 505; i++)
-            {
-                if (i!=StartStep+1 && ObjectRoundPerMove.HasValue && (i - 1) % ((int)Math.Floor(1.0 / ObjectRoundPerMove.Value)) == 1)
-                {
-                    pos += ObjectDirection * (Size - 1);
-                }
-                if (pos < 0 || pos >= Size2)
-                {
-                    break;
-                }
-                Tiles[GetTimePos(i, pos)].IsAsteroid = true;
-            }
-        }
-
-        void FillNebula(int pos)
-        {
-            Tiles[GetTimePos(StartStep, pos)].IsNebula = true;
-            if (StartStep < 1)
-                return;
-
-            for (int i = StartStep + 1; i <= 505; i++)
-            {
-                if (ObjectRoundPerMove.HasValue && (i - 1) % ((int)Math.Floor(1.0/ObjectRoundPerMove.Value)) == 1)
-                {
-                    pos += ObjectDirection * (Size - 1);
-                }
-                if (pos < 0 || pos >= Size2)
-                {
-                    break;
-                }
-                Tiles[GetTimePos(i, pos)].IsNebula = true;
-            }
-        }
-
-
-        void FillEnergy(int pos, int energy)
-        {
-            Tiles[GetTimePos(StartStep, pos)].Energy = energy;
-            if (StartStep < 2)
-                return;
-
-            for (int i = StartStep + 1; i < 505; i++)
-            {
-                if (EnergyRoundPerMove.HasValue && (i - 2) % EnergyRoundPerMove == 0)
-                {
-                    break;
-                }
-                Tiles[GetTimePos(i, pos)].Energy = energy;
-            }
-        }
-
-        void FillVisible(int pos, bool isVisible)
-        {
-            Tiles[GetTimePos(StartStep, pos)].IsVisible = isVisible;
-
-            for (int i = StartStep + 1; i < 505; i++)
-            {
-                Tiles[GetTimePos(i, pos)].IsVisible = isVisible;
-            }
         }
     }
 }
