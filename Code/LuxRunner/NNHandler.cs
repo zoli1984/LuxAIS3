@@ -12,46 +12,10 @@ namespace LuxRunner
 {
     public static class NNHandler
     {
-        static InferenceSession session1 = new InferenceSession("model5x1_test2.onnx");
-        //static InferenceSession session2 = new InferenceSession("model5x1_test2.onnx");
-        //static InferenceSession session2 = new InferenceSession("model5x1_flattenneurons2.onnx");
-        static InferenceSession session = session1;
-        //static InferenceSession session2 = new InferenceSession("model5x1.onnx");
-        //static InferenceSession session3 = new InferenceSession("model5x1_3.onnx");
+        static InferenceSession session1 = new InferenceSession("model5x1_test.onnx");
+        static InferenceSession session2 = new InferenceSession("model5x1_test2.onnx");
+
         static int inputDim = 33;
-        //public static float[,,] GetNNOutput(LuxLogicState luxLogicState)
-        //{
-        //    var nnInputLabel = CreateNNInputLabel(luxLogicState);
-        //    var flatInput = new float[1 * 24 * 24 * inputDim];
-        //    for (int x = 0; x < 24; x++)
-        //    {
-        //        for (int y = 0; y < 24; y++)
-        //        {
-        //            for (int z = 0; z < inputDim; z++)
-        //            {
-        //                flatInput[x * 24 * inputDim + y * inputDim + z] = (float)nnInputLabel[x, y, z];
-        //            }
-        //        }
-        //    }
-
-
-        //    // Create a Torch tensor from C# array, specifying the shape
-        //    var inputTensor = torch.tensor(
-        //        flatInput,
-        //        new long[] { 1, 24, 24, inputDim }   // [batch=1, channels=21, H=24, W=24]
-        //    ).to(torch.float32);
-        //    var outputIValue = (Tensor)_model.forward(inputTensor);
-        //    var flatOutput = outputIValue.data<float>().ToArray();
-        //    var outputArray = new float[32, 32, 6 + 5];
-        //    Buffer.BlockCopy(flatOutput, 0, outputArray, 0, flatOutput.Length * sizeof(float));
-        //    return outputArray;
-        //}
-
-        public static void SwitchNN()
-        {
-            //if (session == session1) session = session2;
-            //else session = session1;
-        }
 
         public static float[,,] GetNNOutput(LuxLogicState luxLogicState)
         {
@@ -73,28 +37,16 @@ namespace LuxRunner
             {
                 NamedOnnxValue.CreateFromTensor("input", inputTensor)
             };
-            using IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results = session.Run(inputs);
+            using IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results = session1.Run(inputs);
             var outputTensor = results.First().AsTensor<float>().ToArray();
 
-            //using IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results2 = session2.Run(inputs);
-            //var outputTensor2 = results2.First().AsTensor<float>().ToArray();
+            using IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results2 = session2.Run(inputs);
+            var outputTensor2 = results2.First().AsTensor<float>().ToArray();
 
-            //for (int i = 0; i < outputTensor.Length; i++)
-            //{
-            //    outputTensor[i] = (outputTensor[i] + outputTensor2[i]) / 2;
-            //}
-
-
-            //using IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results2 = session2.Run(inputs);
-            //var outputTensor2 = results2.First().AsTensor<float>().ToArray();
-
-            //using IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results3 = session3.Run(inputs);
-            //var outputTensor3 = results3.First().AsTensor<float>().ToArray();
-
-            //for (int i = 0; i < outputTensor.Length; i++)
-            //{
-            //    outputTensor[i] = (outputTensor[i] + outputTensor2[i] + outputTensor3[i]) / 3;
-            //}
+            for (int i = 0; i < outputTensor.Length; i++)
+            {
+                outputTensor[i] = (outputTensor[i] + outputTensor2[i]) / 2;
+            }
 
 
             var outputArray = new float[32, 32, 6 + 5];
