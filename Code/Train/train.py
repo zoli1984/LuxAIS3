@@ -182,6 +182,7 @@ class OutConv(nn.Module):
 
 class UNet(nn.Module):
     def __init__(self, n_channels, n_classes, bilinear, is_larger):
+        print(f"Using larger model: {is_larger}")
         super(UNet, self).__init__()
         self.n_channels = n_channels
         self.n_classes = n_classes
@@ -259,15 +260,8 @@ if __name__ == '__main__':
     )
 
     parser.add_argument(
-        "--checkpoint_dir",
-        type=str,
-        required=True,
-        help="checkpoints will be saved here"
-    )
-
-    parser.add_argument(
         "--is_larger_model",
-        type=bool,
+        type=lambda x: x.lower() == 'true',
         default=False,
         help="Use more features in U-net"
     )
@@ -286,16 +280,16 @@ if __name__ == '__main__':
         settings = json.load(f)
 
     # Extract dataset settings
-    dataset_config = settings[args.player_node]
+    player_config = settings[args.player_node]
 
     # Optional: include meta_dir from the top level
-    dataset_dir = Path(dataset_config["dataset_path"])
+    dataset_dir = Path(player_config["dataset_path"])
 
     dataset_files = glob.glob(os.path.join(dataset_dir, '*.in'))
     random.Random(42).shuffle(dataset_files)
 
-    train_dataset_files = dataset_files[:int(len(dataset_files)*dataset_config["train_ratio"])]
-    val_dataset_files = dataset_files[int(len(dataset_files)*dataset_config["train_ratio"]):]
+    train_dataset_files = dataset_files[:int(len(dataset_files)*player_config["train_ratio"])]
+    val_dataset_files = dataset_files[int(len(dataset_files)*player_config["train_ratio"]):]
 
     print(f"Training files: {len(train_dataset_files)}") 
     print(f"Validation files: {len(val_dataset_files)}")
@@ -363,8 +357,8 @@ if __name__ == '__main__':
         print(f"  Val   loss: {avg_val_loss:.4f}")
         if avg_val_loss < best_loss:
             best_loss = avg_val_loss
-        torch.save(model.state_dict(), rf'{args.checkpoint_dir}/{epoch}_{avg_train_loss}_{avg_val_loss}.pth')
+        torch.save(model.state_dict(), rf'{settings["model_checkpoint_dir"]}/{epoch}_{avg_train_loss}_{avg_val_loss}.pth')
         mock_input=torch.rand(1,24,24,33).to(device)
-        torch.onnx.export(model, mock_input, rf'{args.checkpoint_dir}/{epoch}_{avg_train_loss}_{avg_val_loss}.onnx', input_names=["input"], output_names=["output"])
+        torch.onnx.export(model, mock_input, rf'{settings["model_checkpoint_dir"]}/{epoch}_{avg_train_loss}_{avg_val_loss}.onnx', input_names=["input"], output_names=["output"])
         print("Saved model!")
 
