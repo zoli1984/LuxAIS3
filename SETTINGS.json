@@ -1,0 +1,15 @@
+{
+	"kaggle_meta_dir": "h:\\kaggle\\LuxAIS3\\KaggleMetaData",
+	"frog_parade": {
+		"submission_ids": [42704976, 42705163],
+		"replays_path": "h:\\kaggle\\LuxAIS3\\Replays\\FrogParade",
+		"dataset_path": "h:\\kaggle\\LuxAIS3\\Datasets\\FrogParade",
+		"tran_ratio": 0.95
+	},
+	"flat_neurons": {
+		"submission_ids": [43320130, 43317109, 43330358, 43330490],
+		"replays_path": "h:\\kaggle\\LuxAIS3\\Replays\\FlatNeurons",
+		"dataset_path": "h:\\kaggle\\LuxAIS3\\Datasets\\FlatNeurons",
+		"tran_ratio": 1
+	}
+}
