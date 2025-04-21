@@ -69,15 +69,15 @@ parser = argparse.ArgumentParser(description="Run script with settings file and 
 parser.add_argument(
     "--settings_path",
     type=Path,
-    # required=True,
-    default=Path(f"h:\kaggle\LuxAIS3\settings.json"),
+    required=True,
+    default=Path(rf"h:\kaggle\LuxAIS3\settings.json"),
     help="Path to JSON settings file"
 )
 
 parser.add_argument(
     "--player_node",
     type=str,
-    # required=True,
+    required=True,
     default="frog_parade",
     help="Name of the player node in settings file (e.g. 'frog_parade')"
 )
